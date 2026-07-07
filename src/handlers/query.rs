@@ -34,7 +34,7 @@ pub async fn test_connection(id: Value, params: &Value) -> Value {
 
     match client.ping().await {
         Ok(_) => ok_response(id, json!({"success": true})),
-        Err(err) => error_response(id, ErrorCode::InternalError, &err.to_string()),
+        Err(err) => error_response(id, err.code, &err.message),
     }
 }
 
@@ -54,7 +54,7 @@ pub async fn execute_query(id: Value, params: &Value) -> Value {
         }
     };
 
-    let query = match extractor::extract_url(params) {
+    let query = match extractor::extract_query(params) {
         Some(tb) if !tb.is_empty() => tb,
         _ => {
             return error_response(
@@ -92,4 +92,25 @@ pub async fn execute_query(id: Value, params: &Value) -> Value {
             "execution_time_ms": elapsed.as_millis(),
         }),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[tokio::test]
+    async fn execute_query_success() {
+        let params = json!({
+            "params": {
+                "database": "http://elastic:password@123@localhost:9200"
+            },
+            "query": ""
+        });
+
+        let result = ping(json!(1), &params).await;
+
+        assert_eq!(result["id"], 1);
+        assert!(result.get("result").is_some());
+    }
 }

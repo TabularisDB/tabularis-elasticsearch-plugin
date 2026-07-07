@@ -1,11 +1,12 @@
 use crate::error::PluginError;
-use elasticsearch::http::transport::Transport;
+use elasticsearch::http::transport::{SingleNodeConnectionPool, Transport, TransportBuilder};
 use std::{
     collections::HashMap,
     sync::LazyLock,
     time::{Duration, Instant},
 };
 use tokio::sync::RwLock;
+use url::Url;
 
 // Pool TTL: To evict stale connections after 30 minutes
 const POOL_TTL: Duration = Duration::from_secs(30 * 60);
@@ -30,14 +31,23 @@ pub async fn get_transport(url: &str) -> Result<Transport, PluginError> {
     }
 
     // Create new transport
-    let transport = Transport::single_node(url)?;
+    let u = Url::parse(url).map_err(|_| PluginError::invalid_params("invalid url"))?;
+
+    let conn_pool = SingleNodeConnectionPool::new(u);
+
+    // Cannot use Transport::single_node(url) because
+    // we want to support URL with special characters
+    // e.g. http://user:pass@123@localhost:9200
+    let transport = TransportBuilder::new(conn_pool)
+        .build()
+        .map_err(|_| PluginError::internal("failed to create transport"))?;
 
     // Write and return
     let mut pools = CONNECTION_POOLS.write().await;
     let cached = pools
         .entry(url.to_string())
         .or_insert_with(move || CachedTransport {
-            transport: transport,
+            transport,
             last_used: Instant::now(),
         });
 

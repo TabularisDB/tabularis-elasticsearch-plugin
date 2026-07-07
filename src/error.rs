@@ -1,6 +1,5 @@
 //! Plugin-local error type. Keep deps light — no `anyhow`/`thiserror` by default.
 
-use serde_json::{json, Value};
 use std::fmt;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
@@ -54,14 +53,8 @@ impl ErrorCode {
     }
 }
 
-impl Into<Value> for PluginError {
-    fn into(self) -> Value {
-        json!({ "code": self.code.value(), "message": self.message })
-    }
-}
-
 impl From<elasticsearch::Error> for PluginError {
     fn from(err: elasticsearch::Error) -> Self {
-        Self::internal(err.to_string())
+        Self::internal(format!("elasticsearch error: {:?}", err))
     }
 }
