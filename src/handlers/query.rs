@@ -4,8 +4,6 @@
 //! what lets the driver show up in the Tabularis connection picker right
 //! after `just dev-install`. Replace with real checks before shipping.
 
-use std::time::Instant;
-
 use crate::{
     error::ErrorCode,
     es,
@@ -13,6 +11,7 @@ use crate::{
     utils::extractor,
 };
 use serde_json::{json, Value};
+use std::time::Instant;
 
 pub async fn test_connection(id: Value, params: &Value) -> Value {
     let url = match extractor::extract_url(params) {

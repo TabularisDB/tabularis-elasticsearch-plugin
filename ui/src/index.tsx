@@ -7,34 +7,70 @@
 // See the full slot list at:
 // https://github.com/TabularisDB/tabularis/blob/main/plugins/PLUGIN_GUIDE.md#available-slots
 
-import { defineSlot, usePluginToast } from "@tabularis/plugin-api";
+import { defineSlot } from "@tabularis/plugin-api";
+import type { TypedSlotProps } from "@tabularis/plugin-api";
+import type { ChangeEvent } from "react";
 
-const Toolbar = defineSlot("data-grid.toolbar.actions", ({ context }) => {
-  const { showInfo } = usePluginToast();
+import { PLUGIN_ID } from "./styles";
 
-  const handleClick = () => {
-    showInfo(
-      "Hello from Elasticsearch! Active table: " + (context.tableName ?? "(none)"),
-    );
+// The slot's runtime context includes `database` and `onDatabaseChange`
+// alongside the typed `driver`. Declare them locally until plugin-api
+// tightens the shape.
+type FieldContext =
+  TypedSlotProps<"connection-modal.connection_content">["context"] & {
+    database?: string;
+    onDatabaseChange?: (value: string) => void;
   };
 
-  return (
-    <button
-      type="button"
-      onClick={handleClick}
-      style={{
-        padding: "4px 10px",
-        fontSize: "12px",
-        border: "1px solid currentColor",
-        borderRadius: "4px",
-        background: "transparent",
-        color: "inherit",
-        cursor: "pointer",
-      }}
-    >
-      Elasticsearch
-    </button>
-  );
-});
+const DsnField = defineSlot(
+  "connection-modal.connection_content",
+  ({ context }) => {
+    const c = context as FieldContext;
 
-export default Toolbar.component;
+    if (c.driver !== PLUGIN_ID) return null;
+
+    const value = typeof c.database === "string" ? c.database : "";
+    const onChange = c.onDatabaseChange ?? (() => {});
+
+    return (
+      <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+        <label
+          style={{
+            fontSize: "10px",
+            textTransform: "uppercase",
+            fontWeight: 600,
+            letterSpacing: "0.05em",
+            color: "var(--color-text-muted, #94a3b8)",
+          }}
+        >
+          Elasticsearch URL
+        </label>
+        <input
+          type="text"
+          value={value}
+          onChange={(e: ChangeEvent<HTMLInputElement>) =>
+            onChange(e.target.value)
+          }
+          autoCorrect="off"
+          autoCapitalize="off"
+          autoComplete="off"
+          spellCheck={false}
+          placeholder="http://elastic:password@localhost:9200"
+          style={{
+            width: "100%",
+            padding: "7px 10px",
+            background: "var(--color-bg-base, #131929)",
+            border: "1px solid rgba(255,255,255,0.15)",
+            borderRadius: "6px",
+            color: "var(--color-text-primary, #e2e8f0)",
+            fontSize: "13px",
+            outline: "none",
+            boxSizing: "border-box",
+          }}
+        />
+      </div>
+    );
+  },
+);
+
+export default DsnField.component;
