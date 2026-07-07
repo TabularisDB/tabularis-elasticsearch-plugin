@@ -4,8 +4,8 @@
   "name": "Elasticsearch",
   "version": "0.1.0",
   "description": "Tabularis driver plugin for Elasticsearch",
-  "default_port": 5432,
-  "default_username": "",
+  "default_port": 9200,
+  "default_username": "elastic",
   "executable": "elasticsearch-plugin",
   "capabilities": {
     "schemas": false,
@@ -13,15 +13,30 @@
     "routines": false,
     "file_based": false,
     "folder_based": false,
-    "no_connection_required": false,
+    "no_connection_required": true,
     "identifier_quote": "\"",
     "alter_primary_key": false,
     "alter_column": false,
     "create_foreign_keys": false,
     "manage_tables": false,
-    "readonly": true
+    "readonly": true,
+    "connection_string_example": "http://elastic:elastic@localhost:9200"
   },
+  "ui_extensions": [
+    {
+      "slot": "connection-modal.connection_content",
+      "module": "ui/dist/index.js",
+      "order": 10,
+      "driver": "elasticsearch"
+    }
+  ],
   "data_types": [
+    {
+      "name": "BOOLEAN",
+      "category": "boolean",
+      "requires_length": false,
+      "requires_precision": false
+    },
     {
       "name": "INTEGER",
       "category": "numeric",
@@ -29,8 +44,50 @@
       "requires_precision": false
     },
     {
+      "name": "BIGINT",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "FLOAT",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "DOUBLE",
+      "category": "numeric",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
       "name": "TEXT",
       "category": "string",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "VARCHAR",
+      "category": "string",
+      "requires_length": true,
+      "requires_precision": false
+    },
+    {
+      "name": "TIMESTAMP",
+      "category": "datetime",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "DATE",
+      "category": "datetime",
+      "requires_length": false,
+      "requires_precision": false
+    },
+    {
+      "name": "JSON",
+      "category": "json",
       "requires_length": false,
       "requires_precision": false
     }
