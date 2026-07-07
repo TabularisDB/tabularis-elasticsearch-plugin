@@ -4,23 +4,93 @@
 //! what lets the driver show up in the Tabularis connection picker right
 //! after `just dev-install`. Replace with real checks before shipping.
 
+use std::time::Instant;
+
+use crate::{
+    error::ErrorCode,
+    es,
+    rpc::{error_response, ok_response},
+    utils::extractor,
+};
 use serde_json::{json, Value};
 
-use crate::rpc::{not_implemented, ok_response};
+pub async fn test_connection(id: Value, params: &Value) -> Value {
+    let url = match extractor::extract_url(params) {
+        Some(tb) if !tb.is_empty() => tb,
+        _ => {
+            return error_response(
+                id,
+                ErrorCode::InvalidParams,
+                "url must be a non-empty string",
+            )
+        }
+    };
 
-pub fn test_connection(id: Value, _params: &Value) -> Value {
-    // TODO: implement a real connectivity check (open a connection, run a
-    // trivial query, close it).
-    ok_response(id, json!({ "success": true }))
+    let client = match es::client::Client::from_url(&url).await {
+        Ok(client) => client,
+        Err(err) => {
+            return error_response(id, err.code, &err.message);
+        }
+    };
+
+    match client.ping().await {
+        Ok(_) => ok_response(id, json!({"success": true})),
+        Err(err) => error_response(id, ErrorCode::InternalError, &err.to_string()),
+    }
 }
 
-pub fn execute_query(id: Value, _params: &Value) -> Value {
-    // TODO: run the SQL in params.query and return
-    //   { columns: [string], rows: [[any]], total_count: number, execution_time_ms: number }
-    not_implemented(id, "execute_query")
+pub async fn ping(id: Value, params: &Value) -> Value {
+    test_connection(id, params).await
 }
 
-pub fn explain_query(id: Value, _params: &Value) -> Value {
-    // TODO: return the same shape as execute_query but for EXPLAIN.
-    not_implemented(id, "explain_query")
+pub async fn execute_query(id: Value, params: &Value) -> Value {
+    let url = match extractor::extract_url(params) {
+        Some(tb) if !tb.is_empty() => tb,
+        _ => {
+            return error_response(
+                id,
+                ErrorCode::InvalidParams,
+                "url must be a non-empty string",
+            )
+        }
+    };
+
+    let query = match extractor::extract_url(params) {
+        Some(tb) if !tb.is_empty() => tb,
+        _ => {
+            return error_response(
+                id,
+                ErrorCode::InvalidParams,
+                "query must be a non-empty string",
+            )
+        }
+    };
+
+    let client = match es::client::Client::from_url(&url).await {
+        Ok(client) => client,
+        Err(err) => {
+            return error_response(id, err.code, &err.message);
+        }
+    };
+
+    let start = Instant::now();
+
+    let result = match client.execute_sql(&query).await {
+        Ok(result) => result,
+        Err(err) => {
+            return error_response(id, err.code, &err.message);
+        }
+    };
+
+    let elapsed = start.elapsed();
+
+    ok_response(
+        id,
+        json!({
+            "columns": result.columns.into_iter().map(|c| c.name).collect::<Vec<_>>(),
+            "rows": result.rows,
+            "affected_rows": result.rows.len(),
+            "execution_time_ms": elapsed.as_millis(),
+        }),
+    )
 }

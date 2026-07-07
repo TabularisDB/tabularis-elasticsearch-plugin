@@ -4,79 +4,102 @@
 //!
 //! Full reference: https://github.com/TabularisDB/tabularis/blob/main/plugins/PLUGIN_GUIDE.md#5-required-methods
 
+use crate::{
+    error::ErrorCode,
+    es,
+    rpc::{error_response, ok_response},
+    utils::extractor,
+};
 use serde_json::{json, Value};
 
-use crate::rpc::ok_response;
+/// Returns the list of index in the elasticsearch.
+pub async fn get_tables(id: Value, params: &Value) -> Value {
+    let url = match extractor::extract_url(params) {
+        Some(tb) if !tb.is_empty() => tb,
+        _ => {
+            return error_response(
+                id,
+                ErrorCode::InvalidParams,
+                "url must be a non-empty string",
+            )
+        }
+    };
 
-pub fn get_databases(id: Value, _params: &Value) -> Value {
-    // TODO: return your real database list.
-    ok_response(id, json!([]))
-}
+    let client = match es::client::Client::from_url(&url).await {
+        Ok(client) => client,
+        Err(err) => {
+            return error_response(id, err.code, &err.message);
+        }
+    };
 
-pub fn get_schemas(id: Value, _params: &Value) -> Value {
-    // Only meaningful if `capabilities.schemas` is true in manifest.json.
-    ok_response(id, json!([]))
-}
+    let result = match client.get_indices().await {
+        Ok(result) => result,
+        Err(err) => {
+            return error_response(id, err.code, &err.message);
+        }
+    };
 
-pub fn get_tables(id: Value, _params: &Value) -> Value {
-    // TODO: return [{ name, schema, comment }].
-    ok_response(id, json!([]))
-}
-
-pub fn get_columns(id: Value, _params: &Value) -> Value {
-    // TODO: return [{ name, data_type, is_nullable, column_default,
-    //                 is_primary_key, is_auto_increment, comment }].
-    ok_response(id, json!([]))
-}
-
-pub fn get_foreign_keys(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!([]))
-}
-
-pub fn get_indexes(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!([]))
-}
-
-pub fn get_views(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!([]))
-}
-
-pub fn get_view_definition(id: Value, _params: &Value) -> Value {
-    ok_response(id, Value::String(String::new()))
-}
-
-pub fn get_view_columns(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!([]))
-}
-
-pub fn get_routines(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!([]))
-}
-
-pub fn get_routine_parameters(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!([]))
-}
-
-pub fn get_routine_definition(id: Value, _params: &Value) -> Value {
-    ok_response(id, Value::String(String::new()))
-}
-
-pub fn get_schema_snapshot(id: Value, _params: &Value) -> Value {
-    // Used for the ER diagram. Return tables + columns + foreign_keys in one shot.
     ok_response(
         id,
-        json!({
-            "tables": [],
-            "columns": {},
-            "foreign_keys": {},
-        }),
+        json!(result
+            .into_iter()
+            .map(|i| {
+                json!({
+                    "name": i.index,
+                    "schema": null,
+                    "comment": null
+                })
+            })
+            .collect::<Vec<_>>()),
     )
 }
 
-pub fn get_all_columns_batch(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!({}))
-}
+pub async fn get_columns(id: Value, params: &Value) -> Value {
+    let url = match extractor::extract_url(params) {
+        Some(tb) if !tb.is_empty() => tb,
+        _ => {
+            return error_response(
+                id,
+                ErrorCode::InvalidParams,
+                "url must be a non-empty string",
+            )
+        }
+    };
 
-pub fn get_all_foreign_keys_batch(id: Value, _params: &Value) -> Value {
-    ok_response(id, json!({}))
+    let table_name = match extractor::extract_tablename(params) {
+        Some(tb) if !tb.is_empty() => tb,
+        _ => {
+            return error_response(
+                id,
+                ErrorCode::InvalidParams,
+                "tableName must be a non-empty string",
+            )
+        }
+    };
+
+    let client = match es::client::Client::from_url(&url).await {
+        Ok(client) => client,
+        Err(err) => {
+            return error_response(id, err.code, &err.message);
+        }
+    };
+
+    // Send request
+    let result = match client.get_mapping(&table_name).await {
+        Ok(result) => result,
+        Err(err) => {
+            return error_response(id, ErrorCode::InternalError, &err.message);
+        }
+    };
+
+    ok_response(
+        id,
+        json!(result
+            .get(&table_name)
+            .and_then(|idx| idx.get("mappings"))
+            .and_then(|mappings| mappings.get("properties"))
+            .and_then(Value::as_object)
+            .map(|props| props.keys().cloned().collect::<Vec<String>>())
+            .unwrap_or_default()),
+    )
 }

@@ -1,8 +1,7 @@
 //! JSON-RPC dispatch and response helpers.
 
+use crate::{error::ErrorCode, handlers};
 use serde_json::{json, Value};
-
-use crate::handlers;
 
 /// Parse one JSON-RPC line and return the response value (serialised
 /// downstream by `main.rs`). Never panics — parse errors and method
@@ -10,7 +9,13 @@ use crate::handlers;
 pub async fn handle_line(line: &str) -> Value {
     let request: Value = match serde_json::from_str(line) {
         Ok(v) => v,
-        Err(err) => return error_response(Value::Null, -32700, &format!("parse error: {err}")),
+        Err(err) => {
+            return error_response(
+                Value::Null,
+                ErrorCode::ParseError,
+                &format!("parse error: {err}"),
+            )
+        }
     };
 
     let id = request.get("id").cloned().unwrap_or(Value::Null);
@@ -22,7 +27,7 @@ pub async fn handle_line(line: &str) -> Value {
     let params = request.get("params").cloned().unwrap_or(Value::Null);
 
     match method.as_str() {
-        "initialize" => handlers::init::initialize(id, &params).await,
+        "initialize" => ok_response(id, json!({"success": true})),
         "ping" => handlers::query::ping(id, &params).await,
         "test_connection" => handlers::query::test_connection(id, &params).await,
 
@@ -33,7 +38,7 @@ pub async fn handle_line(line: &str) -> Value {
 
         // // Query execution — critical but needs a real driver.
         "execute_query" => handlers::query::execute_query(id, &params).await,
-        "explain_query" => handlers::query::explain_query(id, &params).await,
+        // "explain_query" => handlers::query::explain_query(id, &params).await,
 
         // // CRUD.
         // "insert_record" => handlers::crud::insert_record(id, &params),
@@ -60,10 +65,10 @@ pub fn ok_response(id: Value, result: Value) -> Value {
     })
 }
 
-pub fn error_response(id: Value, code: i64, message: &str) -> Value {
+pub fn error_response(id: Value, code: ErrorCode, message: &str) -> Value {
     json!({
         "jsonrpc": "2.0",
-        "error": { "code": code, "message": message },
+        "error": { "code": code.value(), "message": message },
         "id": id,
     })
 }
@@ -71,7 +76,7 @@ pub fn error_response(id: Value, code: i64, message: &str) -> Value {
 pub fn not_implemented(id: Value, method: &str) -> Value {
     error_response(
         id,
-        -32601,
+        ErrorCode::MethodNotFound,
         &format!("method '{method}' is not implemented by this plugin yet"),
     )
 }

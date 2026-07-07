@@ -18,6 +18,18 @@ impl Client {
         })
     }
 
+    pub async fn ping(&self) -> Result<(), PluginError> {
+        let response = self.es.ping().send().await?;
+
+        if response.status_code() != StatusCode::OK {
+            return Err(PluginError::internal(
+                response.text().await.unwrap_or_default(),
+            ));
+        }
+
+        Ok(())
+    }
+
     pub async fn get_indices(&self) -> Result<Vec<models::Index>, PluginError> {
         let response = self
             .es
