@@ -6,16 +6,33 @@
 // will then correctly flag code you forgot to reach.
 #![allow(dead_code)]
 
-use std::io::{self, BufRead, Write};
+use std::{
+    io::{self, BufRead, Write},
+    time::Duration,
+};
+
+use tokio::time::interval;
 
 mod client;
 mod error;
+mod es;
 mod handlers;
 mod models;
 mod rpc;
 mod utils;
 
-fn main() {
+#[tokio::main]
+async fn main() {
+    // Init
+    tokio::spawn(async {
+        let mut timer = interval(Duration::from_secs(600)); // 10 minutes
+        loop {
+            timer.tick().await;
+            es::pool::cleanup_pools().await;
+        }
+    });
+
+    // Read JSON-RPC lines from stdin, dispatch, write responses
     let stdin = io::stdin();
     let stdout = io::stdout();
     let mut out = stdout.lock();
@@ -27,7 +44,7 @@ fn main() {
             continue;
         }
 
-        let response = rpc::handle_line(trimmed);
+        let response = rpc::handle_line(trimmed).await;
         let mut body = match serde_json::to_string(&response) {
             Ok(s) => s,
             Err(err) => format!(
