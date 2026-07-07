@@ -1,67 +1,66 @@
-# Elasticsearch — Tabularis Plugin
+# Tabularis — Elasticsearch Plugin
 
-Driver plugin for [Tabularis](https://github.com/TabularisDB/tabularis).
-Generated with `@tabularis/create-plugin`.
+A Tabularis driver plugin that lets Tabularis users inspect and query Elasticsearch clusters.
 
-## Getting started
+Current features
+
+- Index browsing: list indices and view basic index stats
+- Mapping viewer: inspect index mappings (fields, types, nested structures)
+- Document samples: preview documents from an index (sampling/scroll)
+- Query execution: run Elasticsearch queries and show results in the Tabularis UI
+
+## Installation
+
+Build and install the plugin locally (developer workflow):
 
 ```bash
-just dev-install       # build + install into ~/.local/share/tabularis/plugins/elasticsearch
+just dev-install    # builds and installs to $HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch
 ```
 
-Then open Tabularis — your driver appears in the connection picker. `test_connection` is stubbed to return success so you can immediately see the plugin wired up.
+Open Tabularis and choose the "Elasticsearch" driver in the connection picker. Configure a connection `http://<username>:<password>@<host>:<port>` to start exploring indices.
 
-## What's implemented
+## Install locally
 
-| Method | Status | Notes |
-|--------|--------|-------|
-| `test_connection` | placeholder | returns `{success: true}` unconditionally — replace with a real check before shipping |
-| `ping` | minimal | returns `null`; falls back to `test_connection` if missing |
-| `get_databases`, `get_schemas`, `get_tables`, `get_columns`, `get_indexes`, `get_foreign_keys` | stubs | return `[]` — fill these in to populate the sidebar |
-| `get_views*`, `get_routines*`, `create_view`, `alter_view`, `drop_view` | `-32601` | not implemented — flip `capabilities.views` / `capabilities.routines` once you wire these |
-| `execute_query`, `explain_query` | `-32601` | implement first if you want query execution in the UI |
-| `insert_record`, `update_record`, `delete_record` | `-32601` | implement for row editing support |
-| DDL generators, batch methods | `-32601` | implement as you light up the matching UI features |
+Copy the binary and `manifest.json` into the Tabularis plugins folder under a
+`elasticsearch/` subdirectory:
 
-## Layout
+| OS | Path |
+|----|------|
+| Linux | `~/.local/share/tabularis/plugins/elasticsearch/` |
+| macOS | `~/Library/Application Support/tabularis/plugins/elasticsearch/` |
+| Windows | `%APPDATA%\debba\tabularis\data\plugins\elasticsearch\` |
 
-```
-src/
-├── main.rs            thin stdio loop
-├── rpc.rs             method dispatch + response helpers
-├── error.rs           plugin error type
-├── models.rs          ConnectionParams + common shapes
-├── client.rs          connection config (stub — implement your driver here)
-├── handlers/
-│   ├── metadata.rs    databases, schemas, tables, columns, indexes, FKs, views, routines
-│   ├── query.rs       test_connection, ping, execute_query, explain_query
-│   ├── crud.rs        insert_record, update_record, delete_record
-│   └── ddl.rs         CREATE/ALTER/DROP generators
-├── utils/
-│   ├── identifiers.rs quote_identifier(name) + tests
-│   └── pagination.rs  paginate(query, page, size) + tests
-└── bin/
-    └── test_plugin.rs local REPL for simulating Tabularis calls
+Restart Tabularis (or install via Settings) and pick **Elasticsearch** in the
+connection form.
+
+## Build
+
+```bash
+cargo build --release
+# binary: target/release/tabularis-elasticsearch-plugin
 ```
 
-## Testing without Tabularis
+## Development
+
+Project layout (high level):
+
+- src/main.rs       — stdio loop for plugin RPC transport
+- src/rpc.rs        — method dispatch and helper responses
+- src/es/*          — Elasticsearch client wrapper and connection config
+- src/handlers/     — metadata, query, sample, and mapping handlers
+- src/models.rs     — connection params and shared types
+- bin/test_plugin.rs — REPL for exercising RPC handlers locally
+
+Run the local REPL to test handlers without Tabularis:
 
 ```bash
 just repl
-# > get_tables
-# { "tables": [] }
+# use REPL commands to exercise rpc handlers
 ```
+## Maintainers
 
-## Publishing
-
-Tag a commit `v0.1.0` and push — the included GitHub Actions workflow builds for Linux (x64/arm64), macOS (x64/arm64), and Windows (x64), then attaches the zipped plugin bundles to the release. Submit a PR to `plugins/registry.json` in the Tabularis repo to publish to the in-app registry.
-
-## References
-
-- [Plugin guide](https://github.com/TabularisDB/tabularis/blob/main/plugins/PLUGIN_GUIDE.md)
-- [Manifest schema](https://github.com/TabularisDB/tabularis/blob/main/plugins/manifest.schema.json)
-- [Tabularis repo](https://github.com/TabularisDB/tabularis)
+* @erwin-lovecraft 
 
 ## License
 
-Apache-2.0
+Apache-2.0.

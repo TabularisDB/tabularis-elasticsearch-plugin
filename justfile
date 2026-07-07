@@ -2,7 +2,7 @@ set shell := ["bash", "-cu"]
 set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
 
 # ---------------------------------------------------------------------------
-# Cross-platform recipes (only shell-agnostic tooling — cargo, npm).
+# Cross-platform recipes (only shell-agnostic tooling — cargo, ppm).
 # ---------------------------------------------------------------------------
 
 # Build the plugin binary in debug mode (plus UI if present).
@@ -47,9 +47,9 @@ build-ui:
         Write-Host "Building UI extension..."
         Push-Location ui
         try {
-            npm install --no-audit --no-fund
+            pnpm i
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
-            npm run build
+            pnpm run build
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
         } finally {
             Pop-Location
