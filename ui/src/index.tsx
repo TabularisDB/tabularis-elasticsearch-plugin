@@ -1,0 +1,40 @@
+// UI extension for the Elasticsearch plugin.
+//
+// This bundle contributes a component to the `data-grid.toolbar.actions`
+// slot — you'll see the button in the top-right of any data grid view
+// when the active connection uses this driver.
+//
+// See the full slot list at:
+// https://github.com/TabularisDB/tabularis/blob/main/plugins/PLUGIN_GUIDE.md#available-slots
+
+import { defineSlot, usePluginToast } from "@tabularis/plugin-api";
+
+const Toolbar = defineSlot("data-grid.toolbar.actions", ({ context }) => {
+  const { showInfo } = usePluginToast();
+
+  const handleClick = () => {
+    showInfo(
+      "Hello from Elasticsearch! Active table: " + (context.tableName ?? "(none)"),
+    );
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      style={{
+        padding: "4px 10px",
+        fontSize: "12px",
+        border: "1px solid currentColor",
+        borderRadius: "4px",
+        background: "transparent",
+        color: "inherit",
+        cursor: "pointer",
+      }}
+    >
+      Elasticsearch
+    </button>
+  );
+});
+
+export default Toolbar.component;
