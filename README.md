@@ -9,6 +9,37 @@ Current features
 - Document samples: preview documents from an index (sampling/scroll)
 - Query execution: run Elasticsearch queries and show results in the Tabularis UI
 
+## Usage
+
+The plugin supports four query modes. The mode is determined by an optional shebang (`#!`) at the beginning of the query.
+
+| Mode | Prefix | Description |
+|------|--------|-------------|
+| SQL (default) | _(none)_ or `#!sql` | Execute Elasticsearch SQL queries. |
+| ES|QL | `#!esql` | Execute ES|QL queries. |
+| REST | `#!rest` | Send raw Elasticsearch REST requests. |
+
+For examples
+
+```text
+SELECT * FROM user_index_000000004;
+
+-- Or explicitly:
+
+#!sql
+SELECT * FROM user_index_000000004;
+
+
+#!esql
+FROM user_index_000000004
+
+#!rest
+POST /post_index/_search
+{"query":{"match_all":{}},"fields":[{"field":"id"},{"field":"content"}],"sort":[{"_doc":{"order":"asc"}}],"track_total_hits":-1,"_source":true}
+```
+
+The first line must contain the HTTP method and endpoint. The remaining content is sent as the request body.
+
 ## Installation
 
 Build and install the plugin locally (developer workflow):

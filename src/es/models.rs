@@ -1,5 +1,5 @@
 use serde::Deserialize;
-use serde_json::Value;
+use serde_json::{Map, Value};
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Index {
@@ -37,5 +37,53 @@ pub struct Field {
 #[derive(Debug, Clone, Deserialize)]
 pub struct SqlResponse {
     pub columns: Vec<Column>,
-    pub rows: Vec<Value>,
+    pub rows: Vec<Vec<Value>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct EsqlResponse {
+    pub took: usize,
+    pub is_partial: bool,
+    pub documents_found: usize,
+    pub values_loaded: usize,
+    pub columns: Vec<Column>,
+    pub values: Vec<Vec<Value>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Shards {
+    pub total: i64,
+    pub successful: i64,
+    pub skipped: i64,
+    pub failed: i64,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Hit {
+    #[serde(rename = "_index")]
+    pub index: String,
+    #[serde(rename = "_id")]
+    pub id: String,
+    #[serde(rename = "_score")]
+    pub score: Option<i64>,
+    #[serde(rename = "_source")]
+    pub source: Option<Map<String, Value>>,
+    pub fields: Option<Map<String, Value>>,
+    pub sort: Option<Vec<Value>>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Hits {
+    pub max_score: Option<i64>,
+    pub hits: Vec<Hit>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct SearchResponse {
+    pub took: usize,
+    pub timed_out: bool,
+
+    #[serde(rename = "_shards")]
+    pub shards: Shards,
+    pub hits: Hits,
 }

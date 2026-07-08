@@ -4,6 +4,9 @@
 //! what lets the driver show up in the Tabularis connection picker right
 //! after `just dev-install`. Replace with real checks before shipping.
 
+use crate::error::PluginError;
+use crate::es::client::Client;
+use crate::handlers::models::{ExecuteQueryResponse, Query, QueryMode};
 use crate::{
     error::ErrorCode,
     es,
@@ -11,7 +14,6 @@ use crate::{
     utils::extractor,
 };
 use serde_json::{json, Value};
-use std::time::Instant;
 
 pub async fn test_connection(id: Value, params: &Value) -> Value {
     let url = match extractor::extract_url(params) {
@@ -55,7 +57,7 @@ pub async fn execute_query(id: Value, params: &Value) -> Value {
     };
 
     let query = match extractor::extract_query(params) {
-        Some(tb) if !tb.is_empty() => tb,
+        Some(payload) if !payload.is_empty() => Query::from(payload),
         _ => {
             return error_response(
                 id,
@@ -65,33 +67,44 @@ pub async fn execute_query(id: Value, params: &Value) -> Value {
         }
     };
 
-    let client = match es::client::Client::from_url(&url).await {
+    let client = match Client::from_url(&url).await {
         Ok(client) => client,
         Err(err) => {
             return error_response(id, err.code, &err.message);
         }
     };
 
-    let start = Instant::now();
+    match QueryExecutor::new(query).execute(client).await {
+        Ok(result) => ok_response(id, json!(result)),
+        Err(err) => error_response(id, err.code, &err.message),
+    }
+}
 
-    let result = match client.execute_sql(&query).await {
-        Ok(result) => result,
-        Err(err) => {
-            return error_response(id, err.code, &err.message);
+struct QueryExecutor {
+    query: Query,
+}
+
+impl QueryExecutor {
+    fn new(query: Query) -> Self {
+        Self{ query }
+    }
+
+    async fn execute(&self, client: Client) -> Result<ExecuteQueryResponse, PluginError> {
+        match self.query.mode {
+            QueryMode::Rest => {
+                let resp = client.search(self.query.clone()).await;
+                resp.map(|rs| ExecuteQueryResponse::from(rs))
+            },
+            QueryMode::Esql => {
+                let resp = client.execute_esql(self.query.clone()).await;
+                resp.map(|rs| ExecuteQueryResponse::from(rs))
+            },
+            QueryMode::None | QueryMode::Sql => {
+                let resp = client.execute_sql(self.query.clone()).await;
+                resp.map(|rs| ExecuteQueryResponse::from(rs))
+            },
         }
-    };
-
-    let elapsed = start.elapsed();
-
-    ok_response(
-        id,
-        json!({
-            "columns": result.columns.into_iter().map(|c| c.name).collect::<Vec<_>>(),
-            "rows": result.rows,
-            "affected_rows": result.rows.len(),
-            "execution_time_ms": elapsed.as_millis(),
-        }),
-    )
+    }
 }
 
 #[cfg(test)]
@@ -100,7 +113,7 @@ mod tests {
     use serde_json::json;
 
     #[tokio::test]
-    async fn execute_query_success() {
+    async fn ping_success() {
         let params = json!({
             "params": {
                 "database": "http://elastic:password@123@localhost:9200"
@@ -111,6 +124,25 @@ mod tests {
         let result = ping(json!(1), &params).await;
 
         assert_eq!(result["id"], 1);
+        assert!(result.get("result").is_some());
+    }
+
+
+    #[tokio::test]
+    async fn search_success() {
+        let params = json!({
+            "params": {
+                "database": "http://elastic:secret@123@localhost:9200"
+            },
+            "query": "#!rest
+\nPOST /post_index/_search\n
+{\"query\":{\"match_all\":{}},\"fields\":[{\"field\":\"id\"},{\"field\":\"content\"}],\"sort\":[{\"_doc\":{\"order\":\"asc\"}}],\"track_total_hits\":-1,\"_source\":true}"
+        });
+
+        let result = execute_query(json!(1), &params).await;
+
+        assert_eq!(result["id"], 1);
+        assert!(result.get("error").is_some(), "{:?}", result.get("error"));
         assert!(result.get("result").is_some());
     }
 }
