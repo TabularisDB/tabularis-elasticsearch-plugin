@@ -112,7 +112,7 @@ dev-install: build
 dev-install: build
     #!pwsh
 
-    $dest = Join-Path $env:APPDATA "debba.tabularis\plugins\elasticsearch"
+    $dest = Join-Path $env:APPDATA "debba\tabularis\data\plugins\elasticsearch"
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Copy-Item "target\debug\elasticsearch-plugin.exe" $dest
     Copy-Item "manifest.json" $dest
@@ -134,5 +134,5 @@ uninstall:
 
 [windows]
 uninstall:
-    $dest = Join-Path $env:APPDATA "debba.tabularis\plugins\elasticsearch"
+    $dest = Join-Path $env:APPDATA "debba\tabularis\data\plugins\elasticsearch"
     if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }

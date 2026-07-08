@@ -33,6 +33,7 @@ pub async fn handle_line(line: &str) -> Value {
 
         // // Metadata — return empty arrays so the driver loads cleanly.
         "get_tables" => handlers::metadata::get_tables(id, &params).await,
+        "get_columns" => handlers::metadata::get_columns(id, &params).await,
         "get_routines" => ok_response(id, json!([])),
         "get_views" => ok_response(id, json!([])),
 

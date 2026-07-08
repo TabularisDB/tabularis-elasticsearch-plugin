@@ -66,13 +66,13 @@ pub async fn get_columns(id: Value, params: &Value) -> Value {
         }
     };
 
-    let table_name = match extractor::extract_tablename(params) {
+    let table_name = match extractor::extract_table(params) {
         Some(tb) if !tb.is_empty() => tb,
         _ => {
             return error_response(
                 id,
                 ErrorCode::InvalidParams,
-                "tableName must be a non-empty string",
+                "table must be a non-empty string",
             )
         }
     };
@@ -85,21 +85,38 @@ pub async fn get_columns(id: Value, params: &Value) -> Value {
     };
 
     // Send request
-    let result = match client.get_mapping(&table_name).await {
-        Ok(result) => result,
+    let resp = match client.get_mapping(&table_name).await {
+        Ok(resp) => resp,
         Err(err) => {
             return error_response(id, ErrorCode::InternalError, &err.message);
         }
     };
 
-    ok_response(
-        id,
-        json!(result
-            .get(&table_name)
-            .and_then(|idx| idx.get("mappings"))
-            .and_then(|mappings| mappings.get("properties"))
-            .and_then(Value::as_object)
-            .map(|props| props.keys().cloned().collect::<Vec<String>>())
-            .unwrap_or_default()),
-    )
+    let result = resp
+        .get(&table_name)
+        .and_then(|index| index.get("mappings"))
+        .and_then(|mappings| mappings.get("properties"))
+        .and_then(Value::as_object)
+        .map(|properties| {
+            properties
+                .iter()
+                .map(|(name, field)| {
+                    let datatype = field
+                        .get("type")
+                        .and_then(Value::as_str)
+                        .unwrap_or("object");
+
+                    json!({
+                        "name": name,
+                        "data_type": datatype,
+                        "is_pk": false,
+                        "is_nullable": false,
+                        "is_auto_increment": false,
+                    })
+                })
+                .collect::<Vec<Value>>()
+        })
+        .unwrap_or_default();
+
+    ok_response(id, json!(result))
 }

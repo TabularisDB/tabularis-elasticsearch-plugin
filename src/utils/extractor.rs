@@ -9,11 +9,10 @@ pub fn extract_url(params: &Value) -> Option<String> {
         .map(|s| s.to_string())
 }
 
-/// Extracts the tablename from the params object
-pub fn extract_tablename(params: &Value) -> Option<String> {
+/// Extracts the table from the params object
+pub fn extract_table(params: &Value) -> Option<String> {
     params
-        .get("params")
-        .and_then(|p| p.get("tablename"))
+        .get("table")
         .and_then(|t| t.as_str())
         .map(|s| s.to_string())
 }
