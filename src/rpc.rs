@@ -37,6 +37,10 @@ pub async fn handle_line(line: &str) -> Value {
         "get_routines" => ok_response(id, json!([])),
         "get_views" => ok_response(id, json!([])),
 
+        // Elasticsearch don't have foreign key and index, but need return empty [] for FE stuff
+        "get_foreign_keys" => ok_response(id, json!([])),
+        "get_indexes" => ok_response(id, json!([])),
+
         // // Query execution — critical but needs a real driver.
         "execute_query" => handlers::query::execute_query(id, &params).await,
         // "explain_query" => handlers::query::explain_query(id, &params).await,
