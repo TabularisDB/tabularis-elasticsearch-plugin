@@ -1,14 +1,15 @@
 use super::{models, pool};
 use crate::error::PluginError;
+use crate::es::models::{EsqlResponse, SearchResponse, SqlResponse};
+use crate::handlers::models::Query;
 use elasticsearch::http::headers::HeaderMap;
+use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
 use elasticsearch::{
     cat::CatIndicesParts, http::StatusCode, indices::IndicesGetMappingParts, Elasticsearch,
 };
 use serde_json::{json, Value};
 use url::Url;
-use crate::es::models::{EsqlResponse, SearchResponse, SqlResponse};
-use crate::handlers::models::Query;
 
 pub struct Client {
     es: Elasticsearch,
@@ -157,8 +158,11 @@ impl Client {
 
         let query_params = (!query_params.is_empty()).then_some(&query_params);
 
-        let body = body.trim();
-        let body = (!body.is_empty()).then(|| String::from(body));
+        let body = (!body.is_empty())
+            .then_some(body)
+            .map(|b| serde_json::from_str::<Value>(b))
+            .transpose().map_err(|err| PluginError::internal(err.to_string()))? // Option<Result<T, E>> -> Result<Option<T>, E>
+            .map(JsonBody::from);
 
         let response = self
             .es
@@ -166,7 +170,11 @@ impl Client {
             .await?;
 
         if response.status_code() != StatusCode::OK {
-            return Err(PluginError::internal(format!("Unexpected status code {} {}", response.status_code(), response.text().await.unwrap_or_default())));
+            return Err(PluginError::internal(format!(
+                "Unexpected status code {} {}",
+                response.status_code(),
+                response.text().await.unwrap_or_default()
+            )));
         }
 
         Ok(response.json().await?)
