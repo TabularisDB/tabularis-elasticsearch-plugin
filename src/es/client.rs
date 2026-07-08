@@ -2,6 +2,7 @@ use super::{models, pool};
 use crate::error::PluginError;
 use crate::es::models::{EsqlResponse, SearchResponse, SqlResponse};
 use crate::handlers::models::Query;
+use crate::handlers::query::ping;
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
@@ -11,6 +12,7 @@ use elasticsearch::{
 use serde_json::{json, Value};
 use url::Url;
 
+#[derive(Debug)]
 pub struct Client {
     es: Elasticsearch,
 }
@@ -161,7 +163,8 @@ impl Client {
         let body = (!body.is_empty())
             .then_some(body)
             .map(|b| serde_json::from_str::<Value>(b))
-            .transpose().map_err(|err| PluginError::internal(err.to_string()))? // Option<Result<T, E>> -> Result<Option<T>, E>
+            .transpose()
+            .map_err(|err| PluginError::internal(err.to_string()))? // Option<Result<T, E>> -> Result<Option<T>, E>
             .map(JsonBody::from);
 
         let response = self
@@ -196,5 +199,83 @@ impl Client {
         }
 
         Ok(response.json().await?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::handlers::models::QueryMode;
+
+    #[derive(Debug)]
+    struct TestCase {
+        q: Query,
+    }
+
+    #[tokio::test]
+    async fn execute_sql_success() {
+        let tcs = [TestCase {
+            q: Query {
+                mode: QueryMode::Sql,
+                body: r"SELECT * FROM posts".to_string(),
+            },
+        }];
+
+        for tc in tcs {
+            let client = Client::from_url("http://elastic:secret@123@localhost:9200").await;
+            assert!(client.is_ok(), "{:?}", client);
+
+            let resp = client.unwrap().execute_sql(tc.q).await;
+            assert!(resp.is_ok(), "{:?}", resp);
+        }
+    }
+
+    #[tokio::test]
+    async fn execute_esql_success() {
+        let tcs = [
+            TestCase {
+                q: Query {
+                    mode: QueryMode::Esql,
+                    body: "FROM posts | WHERE author LIKE \"*Erwin*\" | KEEP author, content"
+                        .to_string(),
+                },
+            },
+            TestCase {
+                q: Query {
+                    mode: QueryMode::Esql,
+                    body: "FROM posts \n| WHERE author LIKE \"*Erwin*\" \n| KEEP author, content"
+                        .to_string(),
+                },
+            },
+        ];
+
+        for tc in tcs {
+            let client = Client::from_url("http://elastic:secret@123@localhost:9200").await;
+            assert!(client.is_ok(), "{:?}", client);
+
+            let resp = client.unwrap().execute_esql(tc.q).await;
+            assert!(resp.is_ok(), "{:?}", resp);
+        }
+    }
+
+    #[tokio::test]
+    async fn execute_search_success() {
+        let tcs = [
+            TestCase {
+                q: Query {
+                    mode: QueryMode::Rest,
+                    body: "POST /posts/_search\n{\"_source\":[\"author\",\"content\"],\"query\":{\"wildcard\":{\"author\":{\"value\":\"*Erwin*\"}}}}"
+                        .to_string(),
+                },
+            },
+        ];
+
+        for tc in tcs {
+            let client = Client::from_url("http://elastic:secret@123@localhost:9200").await;
+            assert!(client.is_ok(), "{:?}", client);
+
+            let resp = client.unwrap().search(tc.q).await;
+            assert!(resp.is_ok(), "{:?}", resp);
+        }
     }
 }

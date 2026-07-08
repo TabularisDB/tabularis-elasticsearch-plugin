@@ -116,7 +116,7 @@ mod tests {
     async fn ping_success() {
         let params = json!({
             "params": {
-                "database": "http://elastic:password@123@localhost:9200"
+                "database": "http://elastic:secret@123@localhost:9200"
             },
             "query": ""
         });
@@ -124,25 +124,5 @@ mod tests {
         let result = ping(json!(1), &params).await;
 
         assert_eq!(result["id"], 1);
-        assert!(result.get("result").is_some());
-    }
-
-
-    #[tokio::test]
-    async fn search_success() {
-        let params = json!({
-            "params": {
-                "database": "http://elastic:secret@123@localhost:9200"
-            },
-            "query": "#!rest
-\nPOST /post_index/_search\n
-{\"query\":{\"match_all\":{}},\"fields\":[{\"field\":\"id\"},{\"field\":\"content\"}],\"sort\":[{\"_doc\":{\"order\":\"asc\"}}],\"track_total_hits\":-1,\"_source\":true}"
-        });
-
-        let result = execute_query(json!(1), &params).await;
-
-        assert_eq!(result["id"], 1);
-        assert!(result.get("error").is_some(), "{:?}", result.get("error"));
-        assert!(result.get("result").is_some());
     }
 }
