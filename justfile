@@ -5,6 +5,31 @@ set windows-shell := ["powershell.exe", "-NoLogo", "-NoProfile", "-Command"]
 # Cross-platform recipes (only shell-agnostic tooling — cargo, ppm).
 # ---------------------------------------------------------------------------
 
+# Run elasticsearch
+run-es:
+    docker run -d \
+      --name elasticsearch \
+      -p 9200:9200 \
+      -e "discovery.type=single-node" \
+      -e "xpack.security.enabled=true" \
+      -e "ELASTIC_PASSWORD=secret@123" \
+      -e "ES_JAVA_OPTS=-Xms1g -Xmx1g" \
+      docker.elastic.co/elasticsearch/elasticsearch:9.1.3
+
+seed-es:
+    curl -u elastic:'secret@123' \
+      -X PUT "http://localhost:9200/posts" \
+      -H "Content-Type: application/json" \
+      --data @testdata/posts-index-mapping.json
+
+    curl -u elastic:'secret@123' \
+      -X POST "http://localhost:9200/posts/_bulk" \
+      -H "Content-Type: application/x-ndjson" \
+      --data-binary @testdata/posts.ndjson
+
+    curl -u elastic:'secret@123' \
+      -X POST "http://localhost:9200/posts/_refresh"
+
 # Build the plugin binary in debug mode (plus UI if present).
 build: build-ui
     cargo build
@@ -43,6 +68,8 @@ build-ui:
 
 [windows]
 build-ui:
+    #!pwsh
+
     if (Test-Path ui/package.json) {
         Write-Host "Building UI extension..."
         Push-Location ui
@@ -83,6 +110,8 @@ dev-install: build
 
 [windows]
 dev-install: build
+    #!pwsh
+
     $dest = Join-Path $env:APPDATA "debba.tabularis\plugins\elasticsearch"
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Copy-Item "target\debug\elasticsearch-plugin.exe" $dest
@@ -105,5 +134,5 @@ uninstall:
 
 [windows]
 uninstall:
-    $dest = Join-Path $env:APPDATA "com.debba.tabularis\plugins\elasticsearch"
+    $dest = Join-Path $env:APPDATA "debba.tabularis\plugins\elasticsearch"
     if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }

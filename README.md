@@ -19,7 +19,7 @@ just dev-install    # builds and installs to $HOME/Library/Application Support/c
 
 Open Tabularis and choose the "Elasticsearch" driver in the connection picker. Configure a connection `http://<username>:<password>@<host>:<port>` to start exploring indices.
 
-## Install locally
+### Explain
 
 Copy the binary and `manifest.json` into the Tabularis plugins folder under a
 `elasticsearch/` subdirectory:
@@ -42,6 +42,22 @@ cargo build --release
 
 ## Development
 
+For setup test environment (run Elasticsearch and seed-data)
+```bash
+# Run Elasticsearch 
+just run-es
+
+# Seed data for Elasticsearch
+just seed-es
+```
+
+Run the local REPL to test handlers without Tabularis:
+
+```bash
+just repl
+# use REPL commands to exercise rpc handlers
+```
+
 Project layout (high level):
 
 - src/main.rs       — stdio loop for plugin RPC transport
@@ -51,12 +67,6 @@ Project layout (high level):
 - src/models.rs     — connection params and shared types
 - bin/test_plugin.rs — REPL for exercising RPC handlers locally
 
-Run the local REPL to test handlers without Tabularis:
-
-```bash
-just repl
-# use REPL commands to exercise rpc handlers
-```
 ## Maintainers
 
 * @erwin-lovecraft 

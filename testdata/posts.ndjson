@@ -1,0 +1,6 @@
+{"index":{"_id":"1"}}
+{"title":"Hello Elasticsearch","content":"Getting started with Elasticsearch","author":"Alice","views":120,"created_at":"2026-07-08T09:00:00Z"}
+{"index":{"_id":"2"}}
+{"title":"Rust Search","content":"Building a search plugin in Rust","author":"Bob","views":42,"created_at":"2026-07-08T09:10:00Z"}
+{"index":{"_id":"3"}}
+{"title":"Tabularis","content":"Elasticsearch plugin for Tabularis","author":"Erwin","views":256,"created_at":"2026-07-08T09:20:00Z"}
