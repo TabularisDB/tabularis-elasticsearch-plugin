@@ -65,7 +65,7 @@ pub struct Hit {
     #[serde(rename = "_id")]
     pub id: String,
     #[serde(rename = "_score")]
-    pub score: Option<i64>,
+    pub score: Option<f64>,
     #[serde(rename = "_source")]
     pub source: Option<Map<String, Value>>,
     pub fields: Option<Map<String, Value>>,
@@ -74,7 +74,7 @@ pub struct Hit {
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Hits {
-    pub max_score: Option<i64>,
+    pub max_score: Option<f64>,
     pub hits: Vec<Hit>,
 }
 
