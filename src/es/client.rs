@@ -1,8 +1,7 @@
-use super::{models, pool};
+use super::pool;
 use crate::error::PluginError;
-use crate::es::models::{EsqlResponse, SearchResponse, SqlResponse};
+use crate::es::models::{EsqlResponse, Index, IndexMapping, SearchResponse, SqlResponse};
 use crate::handlers::models::Query;
-use crate::handlers::query::ping;
 use elasticsearch::http::headers::HeaderMap;
 use elasticsearch::http::request::JsonBody;
 use elasticsearch::http::Method;
@@ -10,6 +9,7 @@ use elasticsearch::{
     cat::CatIndicesParts, http::StatusCode, indices::IndicesGetMappingParts, Elasticsearch,
 };
 use serde_json::{json, Value};
+use std::collections::HashMap;
 use url::Url;
 
 #[derive(Debug)]
@@ -38,7 +38,7 @@ impl Client {
         Ok(())
     }
 
-    pub async fn get_indices(&self) -> Result<Vec<models::Index>, PluginError> {
+    pub async fn get_indices(&self) -> Result<Vec<Index>, PluginError> {
         let response = self
             .es
             .cat()
@@ -57,7 +57,10 @@ impl Client {
         Ok(response.json().await?)
     }
 
-    pub async fn get_mapping(&self, index: &str) -> Result<Value, PluginError> {
+    pub async fn get_mapping(
+        &self,
+        index: &str,
+    ) -> Result<HashMap<String, IndexMapping>, PluginError> {
         let response = self
             .es
             .indices()
@@ -210,6 +213,16 @@ mod tests {
     #[derive(Debug)]
     struct TestCase {
         q: Query,
+    }
+
+    #[tokio::test]
+    async fn get_mapping_success() {
+        let client = Client::from_url("http://elastic:secret@123@localhost:9200").await;
+        assert!(client.is_ok(), "{:?}", client);
+
+        let index_name = "posts";
+        let resp = client.unwrap().get_mapping(index_name).await;
+        assert!(resp.is_ok(), "{:?}", resp);
     }
 
     #[tokio::test]

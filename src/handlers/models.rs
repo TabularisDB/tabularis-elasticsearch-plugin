@@ -1,4 +1,4 @@
-use crate::es::models::{EsqlResponse, SearchResponse, SqlResponse};
+use crate::es::models::{EsqlResponse, FieldMapping, SearchResponse, SqlResponse};
 use serde::Serialize;
 use serde_json::Value;
 
@@ -32,6 +32,43 @@ impl From<String> for Query {
         Self {
             mode,
             body: query.to_owned(),
+        }
+    }
+}
+
+#[derive(Debug, Serialize)]
+pub struct ColumnResponse {
+    pub name: String,
+    pub data_type: String,
+    pub is_pk: bool,
+    pub is_nullable: bool,
+    pub is_auto_increment: bool,
+}
+
+impl ColumnResponse {
+    pub fn from_values(name: String, mapping: FieldMapping) -> Self {
+        let mut data_type = if let Some(dt) = mapping.data_type {
+            dt
+        } else if mapping.properties.is_some() {
+            "object".to_string()
+        } else {
+            "unknown".to_string()
+        };
+
+        if mapping
+            .fields
+            .as_ref()
+            .is_some_and(|f| f.contains_key("keyword"))
+        {
+            data_type.push_str(",keyword");
+        }
+
+        Self {
+            name,
+            data_type,
+            is_pk: false,
+            is_nullable: false,
+            is_auto_increment: false,
         }
     }
 }
@@ -107,7 +144,6 @@ impl From<SearchResponse> for ExecuteQueryResponse {
         }
     }
 }
-
 
 #[cfg(test)]
 mod tests {

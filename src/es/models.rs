@@ -1,5 +1,31 @@
+use std::collections::HashMap;
+
 use serde::Deserialize;
 use serde_json::{Map, Value};
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct IndexMapping {
+    pub mappings: Mappings,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct Mappings {
+    pub properties: HashMap<String, FieldMapping>,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+pub struct FieldMapping {
+    #[serde(rename = "type")]
+    pub data_type: Option<String>,
+
+    pub index: Option<bool>,
+    pub analyzer: Option<String>,
+    pub search_analyzer: Option<String>,
+    pub ignore_above: Option<usize>,
+
+    pub properties: Option<HashMap<String, FieldMapping>>,
+    pub fields: Option<HashMap<String, FieldMapping>>,
+}
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct Index {

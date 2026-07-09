@@ -6,11 +6,15 @@
 
 use crate::{
     error::ErrorCode,
-    es,
+    es::{self},
+    handlers::models::ColumnResponse,
     rpc::{error_response, ok_response},
     utils::extractor,
 };
-use serde_json::{json, Value};
+use serde_json::{
+    json,
+    Value::{self},
+};
 
 /// Returns the list of index in the elasticsearch.
 pub async fn get_tables(id: Value, params: &Value) -> Value {
@@ -92,31 +96,16 @@ pub async fn get_columns(id: Value, params: &Value) -> Value {
         }
     };
 
-    let result = resp
-        .get(&table_name)
-        .and_then(|index| index.get("mappings"))
-        .and_then(|mappings| mappings.get("properties"))
-        .and_then(Value::as_object)
-        .map(|properties| {
-            properties
-                .iter()
-                .map(|(name, field)| {
-                    let datatype = field
-                        .get("type")
-                        .and_then(Value::as_str)
-                        .unwrap_or("object");
+    let result = resp.get(&table_name).and_then(|idx| {
+        let colums: Vec<ColumnResponse> = idx
+            .mappings
+            .properties
+            .iter()
+            .map(|(name, props)| ColumnResponse::from_values(name.to_string(), props.to_owned()))
+            .collect();
 
-                    json!({
-                        "name": name,
-                        "data_type": datatype,
-                        "is_pk": false,
-                        "is_nullable": false,
-                        "is_auto_increment": false,
-                    })
-                })
-                .collect::<Vec<Value>>()
-        })
-        .unwrap_or_default();
+        Some(colums)
+    });
 
     ok_response(id, json!(result))
 }

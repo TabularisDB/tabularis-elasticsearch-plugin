@@ -86,7 +86,7 @@ struct QueryExecutor {
 
 impl QueryExecutor {
     fn new(query: Query) -> Self {
-        Self{ query }
+        Self { query }
     }
 
     async fn execute(&self, client: Client) -> Result<ExecuteQueryResponse, PluginError> {
@@ -94,15 +94,15 @@ impl QueryExecutor {
             QueryMode::Rest => {
                 let resp = client.search(self.query.clone()).await;
                 resp.map(|rs| ExecuteQueryResponse::from(rs))
-            },
+            }
             QueryMode::Esql => {
                 let resp = client.execute_esql(self.query.clone()).await;
                 resp.map(|rs| ExecuteQueryResponse::from(rs))
-            },
+            }
             QueryMode::None | QueryMode::Sql => {
                 let resp = client.execute_sql(self.query.clone()).await;
                 resp.map(|rs| ExecuteQueryResponse::from(rs))
-            },
+            }
         }
     }
 }
