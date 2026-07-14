@@ -24,12 +24,6 @@ pub struct CachedTransport {
 }
 
 pub async fn get_transport(url: &str) -> Result<Transport, PluginError> {
-    // Held for the whole check-then-build-then-insert sequence so two
-    // concurrent requests for a brand-new URL can't both build a Transport:
-    // the second one just finds the first one's entry already cached.
-    // TransportBuilder::build() does no network I/O (it only constructs the
-    // client), so holding the lock across it doesn't block other requests
-    // for long.
     let mut pools = CONNECTION_POOLS.lock().await;
 
     if let Some(cached) = pools.get_mut(url) {
