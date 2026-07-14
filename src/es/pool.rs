@@ -5,32 +5,37 @@ use std::{
     sync::LazyLock,
     time::{Duration, Instant},
 };
-use tokio::sync::RwLock;
+use tokio::sync::Mutex;
 use url::Url;
 
 // Pool TTL: To evict stale connections after 30 minutes
 const POOL_TTL: Duration = Duration::from_secs(30 * 60);
 
 // A global connection pool for cached Elasticsearch transports.
-static CONNECTION_POOLS: LazyLock<RwLock<HashMap<String, CachedTransport>>> =
-    LazyLock::new(|| RwLock::new(HashMap::new()));
+// Always accessed via a plain mutex: every access (hit or miss) needs to
+// write `last_used`, so a read/write split bought nothing but complexity.
+static CONNECTION_POOLS: LazyLock<Mutex<HashMap<String, CachedTransport>>> =
+    LazyLock::new(|| Mutex::new(HashMap::new()));
 
 #[derive(Debug, Clone)]
 pub struct CachedTransport {
     transport: Transport,
-    last_used: std::time::Instant,
+    last_used: Instant,
 }
 
 pub async fn get_transport(url: &str) -> Result<Transport, PluginError> {
-    // Read and returns if already cached
+    // Cache hit: refresh last_used and return. The lock is only held for a
+    // HashMap lookup, not for the ES query itself, so it's held briefly enough
+    // that other requests (even to other URLs) aren't blocked meaningfully.
     {
-        let pools = CONNECTION_POOLS.read().await;
-        if let Some(cached) = pools.get(url) {
-            return Ok(cached.clone().transport);
+        let mut pools = CONNECTION_POOLS.lock().await;
+        if let Some(cached) = pools.get_mut(url) {
+            cached.last_used = Instant::now();
+            return Ok(cached.transport.clone());
         }
     }
 
-    // Create new transport
+    // Cache miss: build the transport without holding the lock.
     let u = Url::parse(url).map_err(|_| PluginError::invalid_params("invalid url"))?;
 
     let conn_pool = SingleNodeConnectionPool::new(u);
@@ -43,7 +48,7 @@ pub async fn get_transport(url: &str) -> Result<Transport, PluginError> {
         .map_err(|_| PluginError::internal("failed to create transport"))?;
 
     // Write and return
-    let mut pools = CONNECTION_POOLS.write().await;
+    let mut pools = CONNECTION_POOLS.lock().await;
     let cached = pools
         .entry(url.to_string())
         .or_insert_with(move || CachedTransport {
@@ -51,11 +56,11 @@ pub async fn get_transport(url: &str) -> Result<Transport, PluginError> {
             last_used: Instant::now(),
         });
 
-    Ok(cached.clone().transport)
+    Ok(cached.transport.clone())
 }
 
 pub async fn cleanup_pools() {
-    let mut pools = CONNECTION_POOLS.write().await;
+    let mut pools = CONNECTION_POOLS.lock().await;
 
     pools.retain(|_, pool| pool.last_used.elapsed() < POOL_TTL);
 }

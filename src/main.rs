@@ -31,7 +31,13 @@ async fn main() {
     let mut out = stdout.lock();
 
     for line in stdin.lock().lines() {
-        let Ok(line) = line else { break };
+        let line = match line {
+            Ok(line) => line,
+            Err(err) => {
+                eprintln!("stdin read error, exiting: {err}");
+                break;
+            }
+        };
         let trimmed = line.trim();
         if trimmed.is_empty() {
             continue;
