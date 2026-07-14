@@ -24,18 +24,13 @@ pub struct CachedTransport {
 }
 
 pub async fn get_transport(url: &str) -> Result<Transport, PluginError> {
-    // Cache hit: refresh last_used and return. The lock is only held for a
-    // HashMap lookup, not for the ES query itself, so it's held briefly enough
-    // that other requests (even to other URLs) aren't blocked meaningfully.
-    {
-        let mut pools = CONNECTION_POOLS.lock().await;
-        if let Some(cached) = pools.get_mut(url) {
-            cached.last_used = Instant::now();
-            return Ok(cached.transport.clone());
-        }
+    let mut pools = CONNECTION_POOLS.lock().await;
+
+    if let Some(cached) = pools.get_mut(url) {
+        cached.last_used = Instant::now();
+        return Ok(cached.transport.clone());
     }
 
-    // Cache miss: build the transport without holding the lock.
     let u = Url::parse(url).map_err(|_| PluginError::invalid_params("invalid url"))?;
 
     let conn_pool = SingleNodeConnectionPool::new(u);
@@ -47,11 +42,9 @@ pub async fn get_transport(url: &str) -> Result<Transport, PluginError> {
         .build()
         .map_err(|_| PluginError::internal("failed to create transport"))?;
 
-    // Write and return
-    let mut pools = CONNECTION_POOLS.lock().await;
     let cached = pools
         .entry(url.to_string())
-        .or_insert_with(move || CachedTransport {
+        .or_insert_with(|| CachedTransport {
             transport,
             last_used: Instant::now(),
         });

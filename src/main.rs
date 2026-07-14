@@ -1,8 +1,4 @@
 //! Entry point: read JSON-RPC lines from stdin, dispatch, write responses.
-//!
-//! Requests are processed concurrently by a fixed pool of worker tasks so a
-//! slow query doesn't block unrelated requests. Response ordering doesn't
-//! matter since Tabularis matches responses back to requests via `id`.
 use std::{sync::Arc, time::Duration};
 
 use tokio::{
@@ -30,12 +26,6 @@ const POOL_CLEANUP_INTERVAL: Duration = Duration::from_secs(600); // 10 minutes
 
 #[tokio::main]
 async fn main() {
-    // Single shutdown signal shared by every long-running task. The pool
-    // cleanup task has no other way to know when to stop, so it reacts to
-    // this directly. The reader/worker/writer pipeline instead shuts down
-    // by closing channels in sequence (see below) so that anything already
-    // read from stdin is guaranteed to be processed and written back before
-    // the process exits.
     let (shutdown_tx, shutdown_rx) = watch::channel(false);
 
     let cleanup_handle = tokio::spawn(run_pool_cleanup(shutdown_rx));
@@ -49,15 +39,10 @@ async fn main() {
     let worker_handles: Vec<_> = (0..WORKER_POOL_SIZE)
         .map(|_| tokio::spawn(run_worker(req_rx.clone(), resp_tx.clone())))
         .collect();
-    // Drop main's copy so the writer's channel closes once every worker has
-    // finished draining its queue and dropped its own copy.
     drop(resp_tx);
 
     run_reader(req_tx).await;
 
-    // Stdin closed (or errored): stop the cleanup task and let the workers
-    // drain whatever is still queued before they see the request channel
-    // close and exit.
     let _ = shutdown_tx.send(true);
 
     for handle in worker_handles {
