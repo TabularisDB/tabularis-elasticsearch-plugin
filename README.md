@@ -16,7 +16,7 @@ The plugin supports four query modes. The mode is determined by an optional sheb
 | Mode | Prefix | Description |
 |------|--------|-------------|
 | SQL (default) | _(none)_ or `#!sql` | Execute Elasticsearch SQL queries. |
-| ES|QL | `#!esql` | Execute ES|QL queries. |
+| ES\|QL | `#!esql` | Execute ES\|QL queries. |
 | REST | `#!rest` | Send raw Elasticsearch REST requests. |
 
 For examples
