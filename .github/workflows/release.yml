@@ -21,17 +21,6 @@ jobs:
             target: x86_64-unknown-linux-gnu
             archive: zip
             binary-suffix: ""
-          - platform-label: linux-arm64
-            runner: ubuntu-latest
-            target: aarch64-unknown-linux-gnu
-            archive: zip
-            binary-suffix: ""
-            cross: true
-          - platform-label: darwin-x64
-            runner: macos-latest
-            target: x86_64-apple-darwin
-            archive: zip
-            binary-suffix: ""
           - platform-label: darwin-arm64
             runner: macos-14
             target: aarch64-apple-darwin
@@ -75,16 +64,7 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
-      - name: Install cross (linux-arm64 only)
-        if: matrix.cross
-        run: cargo install cross --locked
-
-      - name: Build (cross)
-        if: matrix.cross
-        run: cross build --release --target ${{ matrix.target }}
-
       - name: Build
-        if: ${{ !matrix.cross }}
         run: cargo build --release --target ${{ matrix.target }}
 
       - name: Package (unix)
