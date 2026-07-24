@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="elasticsearch-logo.svg" alt="Elasticsearch logo" width="96" height="96">
+</p>
+
 # Tabularis — Elasticsearch Plugin
 
 A Tabularis driver plugin that lets Tabularis users inspect and query Elasticsearch clusters.
@@ -41,8 +45,18 @@ POST /post_index/_search
 The first line must contain the HTTP method and endpoint. The remaining content is sent as the request body.
 
 ## Installation
+## Install from the registry
 
-Build and install the plugin locally (developer workflow):
+This plugin is published to the [Tabularium registry](https://registry.tabularis.dev) as
+`tabularis-elasticsearch-plugin`. Search for **Elasticsearch** in the Tabularis plugin
+browser and install it from there.
+
+If you point Tabularis at a different Tabularium instance via `customRegistryUrl` in
+`config.json`, make sure that registry has ingested this plugin's releases.
+
+## Installation (developer workflow)
+
+Build and install the plugin locally:
 
 ```bash
 just dev-install    # builds and installs to $HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch
@@ -97,6 +111,20 @@ Project layout (high level):
 - src/handlers/     — metadata, query, sample, and mapping handlers
 - src/models.rs     — connection params and shared types
 - bin/test_plugin.rs — REPL for exercising RPC handlers locally
+
+## Releasing
+
+This repo ships two manifests that must stay in sync with each other and with the release tag:
+
+- `manifest.json` — the runtime manifest, packaged inside each platform `.zip`.
+- `.tabularium` — the registry manifest read by [Tabularium](https://registry.tabularis.dev) when it ingests a release.
+
+To cut a release:
+
+1. Bump `version` in `Cargo.toml`, `manifest.json`, and `.tabularium` to the same value.
+2. Commit, then push a tag `vX.Y.Z` matching that version.
+3. `.github/workflows/release.yml` validates the tag against both manifests, builds binaries for all 5 platforms, and publishes a GitHub Release with the zips attached.
+4. Submit (or re-submit) the plugin at [registry.tabularis.dev/submit](https://registry.tabularis.dev/submit) so the new version is ingested. Check [`/requests`](https://registry.tabularis.dev/requests) for approval status.
 
 ## Maintainers
 

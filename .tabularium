@@ -1,9 +1,21 @@
 {
-  "$schema": "https://tabularis.dev/schemas/plugin-manifest.json",
-  "id": "elasticsearch",
-  "name": "Elasticsearch",
+  "name": "tabularis-elasticsearch-plugin",
   "version": "0.1.1",
-  "description": "Tabularis driver plugin for Elasticsearch",
+  "description": "Browse Elasticsearch indices, inspect mappings, and run queries directly from Tabularis.",
+  "category": "search",
+  "kind": "driver",
+  "tags": ["elasticsearch", "search", "observability", "logs", "nosql"],
+  "license": "Apache-2.0",
+  "icon": "https://raw.githubusercontent.com/TabularisDB/tabularis-elasticsearch-plugin/main/elasticsearch-logo.svg",
+  "homepage": "https://github.com/TabularisDB/tabularis-elasticsearch-plugin",
+  "documentation_url": "https://github.com/TabularisDB/tabularis-elasticsearch-plugin#readme",
+  "support": {
+    "issues_url": "https://github.com/TabularisDB/tabularis-elasticsearch-plugin/issues"
+  },
+  "readme": "README.md",
+  "engine": "elasticsearch",
+  "paradigms": ["search", "document"],
+  "color": "#FEC514",
   "default_port": 9200,
   "default_username": "elastic",
   "executable": "elasticsearch-plugin",
@@ -22,14 +34,6 @@
     "readonly": true,
     "connection_string_example": "http://elastic:elastic@localhost:9200"
   },
-  "ui_extensions": [
-    {
-      "slot": "connection-modal.connection_content",
-      "module": "ui/dist/index.js",
-      "order": 10,
-      "driver": "elasticsearch"
-    }
-  ],
   "data_types": [
     {
       "name": "BOOLEAN",
