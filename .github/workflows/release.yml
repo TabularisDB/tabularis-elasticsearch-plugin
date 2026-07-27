@@ -97,6 +97,7 @@ jobs:
           mkdir -p "$STAGE"
           cp target/${{ matrix.target }}/release/elasticsearch-plugin${{ matrix.binary-suffix }} "$STAGE/"
           cp manifest.json "$STAGE/"
+          cp .tabularium "$STAGE/"
           if [ -f ui/dist/index.js ]; then
             mkdir -p "$STAGE/ui/dist"
             cp ui/dist/index.js "$STAGE/ui/dist/"
@@ -111,6 +112,7 @@ jobs:
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item "target\${{ matrix.target }}\release\elasticsearch-plugin${{ matrix.binary-suffix }}" $stage
           Copy-Item "manifest.json" $stage
+          Copy-Item ".tabularium" $stage
           if (Test-Path "ui\dist\index.js") {
             New-Item -ItemType Directory -Force -Path "$stage\ui\dist" | Out-Null
             Copy-Item "ui\dist\index.js" "$stage\ui\dist"
