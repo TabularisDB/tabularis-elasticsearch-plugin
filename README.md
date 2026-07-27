@@ -66,7 +66,7 @@ Open Tabularis and choose the "Elasticsearch" driver in the connection picker. C
 
 ### Explain
 
-Copy the binary and `manifest.json` into the Tabularis plugins folder under a
+Copy the binary and `.tabularium` into the Tabularis plugins folder under a
 `elasticsearch/` subdirectory:
 
 | OS | Path |
@@ -116,12 +116,12 @@ Project layout (high level):
 
 This repo ships two manifests that must stay in sync with each other and with the release tag:
 
-- `manifest.json` — the runtime manifest, packaged inside each platform `.zip`.
+- `.tabularium` — the runtime manifest, packaged inside each platform `.zip`.
 - `.tabularium` — the registry manifest read by [Tabularium](https://registry.tabularis.dev) when it ingests a release.
 
 To cut a release:
 
-1. Bump `version` in `Cargo.toml`, `manifest.json`, and `.tabularium` to the same value.
+1. Bump `version` in `Cargo.toml` and `.tabularium` to the same value.
 2. Commit, then push a tag `vX.Y.Z` matching that version.
 3. `.github/workflows/release.yml` validates the tag against both manifests, builds binaries for all 5 platforms, and publishes a GitHub Release with the zips attached.
 4. Submit (or re-submit) the plugin at [registry.tabularis.dev/submit](https://registry.tabularis.dev/submit) so the new version is ingested. Check [`/requests`](https://registry.tabularis.dev/requests) for approval status.

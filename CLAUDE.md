@@ -83,9 +83,9 @@ Tabularis sends the query text as a single string; the plugin infers how to run 
 - `src/handlers/models.rs` — `Query`/`QueryMode` (shebang parsing) and the `ExecuteQueryResponse` conversions described above
 - `src/utils/extractor.rs` — pulls `url`/`table`/`query` out of the raw RPC `params` JSON
 - `src/utils/identifiers.rs`, `src/utils/pagination.rs` — SQL-identifier quoting and LIMIT/OFFSET helpers; currently unused by any handler (no DDL/pagination wired up yet), kept for when CRUD/DDL/pagination support is added
-- `ui/` — separate pnpm/Vite package building a React UI extension (`ui/dist/index.js`) that Tabularis loads at runtime via the `ui_extensions` entry in `manifest.json`. It contributes a custom "Elasticsearch URL" field to the connection modal (slot `connection-modal.connection_content`) since this driver's "database" field is actually a full URL, not a plain name. React/`@tabularis/plugin-api` are Vite externals — the host provides them, don't bundle them.
+- `ui/` — separate pnpm/Vite package building a React UI extension (`ui/dist/index.js`) that Tabularis loads at runtime via the `ui_extensions` entry in `.tabularium`. It contributes a custom "Elasticsearch URL" field to the connection modal (slot `connection-modal.connection_content`) since this driver's "database" field is actually a full URL, not a plain name. React/`@tabularis/plugin-api` are Vite externals — the host provides them, don't bundle them.
 
-### `manifest.json`
+### `.tabularium`
 
 Declares plugin identity, capabilities (`readonly: true`, `no_connection_required: true`, no schemas/views/routines/FKs), the UI extension slot, and the pseudo data types shown in the Tabularis UI. Keep `capabilities` in sync with what's actually implemented in `rpc.rs` — e.g. don't flip `manage_tables`/`alter_column`/etc. to `true` without a matching DDL handler.
 
@@ -94,4 +94,4 @@ Declares plugin identity, capabilities (`readonly: true`, `no_connection_require
 1. Add the `match` arm in `rpc.rs`.
 2. Implement the handler in the relevant `src/handlers/*.rs`, following the existing pattern: extract params via `utils::extractor`, build a `Client` via `Client::from_url`, map `Result<_, PluginError>` to `ok_response`/`error_response`.
 3. If it touches a new ES response shape, add a `Deserialize` struct to `src/es/models.rs` and a method to `src/es/client.rs`.
-4. Update `manifest.json` capabilities if the change affects what the UI should show.
+4. Update `.tabularium` capabilities if the change affects what the UI should show.

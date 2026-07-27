@@ -18,11 +18,11 @@ jobs:
       - name: Check tag matches manifest versions
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          MANIFEST_VERSION=$(jq -r .version manifest.json)
+          MANIFEST_VERSION=$(jq -r .version .tabularium)
           TABULARIUM_VERSION=$(jq -r .version .tabularium)
 
           if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match manifest.json version ($MANIFEST_VERSION)"
+            echo "::error::Tag version ($TAG_VERSION) does not match .tabularium version ($MANIFEST_VERSION)"
             exit 1
           fi
 
@@ -96,7 +96,7 @@ jobs:
           STAGE=staging
           mkdir -p "$STAGE"
           cp target/${{ matrix.target }}/release/elasticsearch-plugin${{ matrix.binary-suffix }} "$STAGE/"
-          cp manifest.json "$STAGE/"
+          cp .tabularium "$STAGE/"
           cp .tabularium "$STAGE/"
           if [ -f ui/dist/index.js ]; then
             mkdir -p "$STAGE/ui/dist"
@@ -111,7 +111,7 @@ jobs:
           $stage = "staging"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item "target\${{ matrix.target }}\release\elasticsearch-plugin${{ matrix.binary-suffix }}" $stage
-          Copy-Item "manifest.json" $stage
+          Copy-Item ".tabularium" $stage
           Copy-Item ".tabularium" $stage
           if (Test-Path "ui\dist\index.js") {
             New-Item -ItemType Directory -Force -Path "$stage\ui\dist" | Out-Null
@@ -122,4 +122,6 @@ jobs:
       - name: Upload release asset
         uses: softprops/action-gh-release@v2
         with:
-          files: elasticsearch-plugin-${{ matrix.platform-label }}.zip
+          files: |
+            elasticsearch-plugin-${{ matrix.platform-label }}.zip
+            .tabularium
