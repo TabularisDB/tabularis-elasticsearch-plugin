@@ -1,5 +1,6 @@
 {
   "name": "tabularis-elasticsearch-plugin",
+  "engine": "elasticsearch",
   "version": "0.1.2",
   "description": "Browse Elasticsearch indices, inspect mappings, and run queries directly from Tabularis.",
   "category": "search",
@@ -12,6 +13,11 @@
   "support": {
     "issues_url": "https://github.com/TabularisDB/tabularis-elasticsearch-plugin/issues"
   },
+   "paradigms": [
+    "document",
+    "search",
+    "vector"
+  ],
   "readme": "README.md",
   "engine": "elasticsearch",
   "paradigms": ["search", "document"],
