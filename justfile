@@ -88,7 +88,7 @@ build-ui:
 dev-install: build
     mkdir -p ~/.local/share/tabularis/plugins/elasticsearch
     cp target/debug/elasticsearch-plugin ~/.local/share/tabularis/plugins/elasticsearch/
-    cp manifest.json ~/.local/share/tabularis/plugins/elasticsearch/
+    cp .tabularium ~/.local/share/tabularis/plugins/elasticsearch/
     @if [ -f ui/dist/index.js ]; then \
         mkdir -p ~/.local/share/tabularis/plugins/elasticsearch/ui/dist; \
         cp ui/dist/index.js ~/.local/share/tabularis/plugins/elasticsearch/ui/dist/; \
@@ -100,7 +100,7 @@ dev-install: build
 dev-install: build
     mkdir -p "$HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch"
     cp target/debug/elasticsearch-plugin "$HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch/"
-    cp manifest.json "$HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch/"
+    cp .tabularium "$HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch/"
     @if [ -f ui/dist/index.js ]; then \
         mkdir -p "$HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch/ui/dist"; \
         cp ui/dist/index.js "$HOME/Library/Application Support/com.debba.tabularis/plugins/elasticsearch/ui/dist/"; \
@@ -115,7 +115,7 @@ dev-install: build
     $dest = Join-Path $env:APPDATA "debba\tabularis\data\plugins\elasticsearch"
     New-Item -ItemType Directory -Force -Path $dest | Out-Null
     Copy-Item "target\debug\elasticsearch-plugin.exe" $dest
-    Copy-Item "manifest.json" $dest
+    Copy-Item ".tabularium" $dest
     if (Test-Path "ui\dist\index.js") {
         New-Item -ItemType Directory -Force -Path (Join-Path $dest "ui\dist") | Out-Null
         Copy-Item "ui\dist\index.js" (Join-Path $dest "ui\dist")
