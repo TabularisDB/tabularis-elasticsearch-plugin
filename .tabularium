@@ -41,7 +41,7 @@
   "data_types": [
     {
       "name": "BOOLEAN",
-      "category": "other",
+      "category": "boolean",
       "requires_length": false,
       "requires_precision": false
     },
