@@ -15,16 +15,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Check tag matches manifest versions
+      - name: Check tag matches manifest version
         run: |
           TAG_VERSION="${GITHUB_REF_NAME#v}"
-          MANIFEST_VERSION=$(jq -r .version .tabularium)
           TABULARIUM_VERSION=$(jq -r .version .tabularium)
-
-          if [ "$TAG_VERSION" != "$MANIFEST_VERSION" ]; then
-            echo "::error::Tag version ($TAG_VERSION) does not match .tabularium version ($MANIFEST_VERSION)"
-            exit 1
-          fi
 
           if [ "$TAG_VERSION" != "$TABULARIUM_VERSION" ]; then
             echo "::error::Tag version ($TAG_VERSION) does not match .tabularium version ($TABULARIUM_VERSION)"
@@ -97,7 +91,6 @@ jobs:
           mkdir -p "$STAGE"
           cp target/${{ matrix.target }}/release/elasticsearch-plugin${{ matrix.binary-suffix }} "$STAGE/"
           cp .tabularium "$STAGE/"
-          cp .tabularium "$STAGE/"
           if [ -f ui/dist/index.js ]; then
             mkdir -p "$STAGE/ui/dist"
             cp ui/dist/index.js "$STAGE/ui/dist/"
@@ -111,7 +104,6 @@ jobs:
           $stage = "staging"
           New-Item -ItemType Directory -Force -Path $stage | Out-Null
           Copy-Item "target\${{ matrix.target }}\release\elasticsearch-plugin${{ matrix.binary-suffix }}" $stage
-          Copy-Item ".tabularium" $stage
           Copy-Item ".tabularium" $stage
           if (Test-Path "ui\dist\index.js") {
             New-Item -ItemType Directory -Force -Path "$stage\ui\dist" | Out-Null
