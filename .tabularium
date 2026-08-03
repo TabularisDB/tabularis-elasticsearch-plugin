@@ -1,7 +1,7 @@
 {
   "name": "tabularis-elasticsearch-plugin",
   "engine": "elasticsearch",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Browse Elasticsearch indices, inspect mappings, and run queries directly from Tabularis.",
   "category": "search",
   "kind": "driver",
