@@ -1,5 +1,5 @@
 {
-  "name": "Elasticsearch",
+  "name": "elasticsearch",
   "engine": "elasticsearch",
   "version": "0.1.4",
   "description": "Browse Elasticsearch indices, inspect mappings, and run queries directly from Tabularis.",
