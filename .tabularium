@@ -1,7 +1,7 @@
 {
   "name": "elasticsearch",
   "engine": "elasticsearch",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Browse Elasticsearch indices, inspect mappings, and run queries directly from Tabularis.",
   "category": "search",
   "kind": "driver",
@@ -38,6 +38,14 @@
     "readonly": true,
     "connection_string_example": "http://elastic:elastic@localhost:9200"
   },
+  "ui_extensions": [
+    {
+      "slot": "connection-modal.connection_content",
+      "module": "ui/dist/index.js",
+      "order": 10,
+      "driver": "elasticsearch"
+    }
+  ],
   "data_types": [
     {
       "name": "BOOLEAN",
