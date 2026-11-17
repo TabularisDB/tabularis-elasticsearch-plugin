@@ -58,3 +58,12 @@ jobs:
       - uses: rustsec/audit-check@v2
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
+          # RUSTSEC-2026-0543 (chrono is unmaintained) is informational: no
+          # patched release exists and no vulnerability is reported. chrono
+          # is only a lockfile entry: it is an optional dependency of
+          # serde_with (pulled by the elasticsearch crate) whose `chrono`
+          # feature is not enabled, so `cargo tree -i chrono --target all`
+          # has no path and no chrono code is compiled into the plugin.
+          # Re-check whenever the elasticsearch crate is upgraded, or if the
+          # advisory gains a patched version.
+          ignore: RUSTSEC-2026-0543

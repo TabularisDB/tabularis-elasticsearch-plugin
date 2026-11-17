@@ -2,7 +2,7 @@
   "id": "elasticsearch",
   "name": "Elasticsearch",
   "engine": "elasticsearch",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Browse Elasticsearch indices, inspect mappings, and run queries directly from Tabularis.",
   "category": "search",
   "kind": "driver",
